@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 
@@ -95,6 +96,7 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --entrypo
 		log.Printf("entrypoint: %+v", containerEntrypoint)
 
 		var containerCmd = inspect.Config.Cmd
+		//var containerCmd = []string{"sh", "-c", `export PATH=$PATH:/.debugger /.debugger/sh`} //TODO: last part can be just "sh"?
 		if len(cmdOverride) > 0 {
 			x := strslice.StrSlice{}
 			for _, y := range cmdOverride {
@@ -131,6 +133,28 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --entrypo
 		log.Println("Debug your container:")
 		log.Printf(`$ docker exec -it %s /.debugger/sh -c "PATH=\$PATH:/.debugger /.debugger/sh"`, targetContainerCreate.ID)
 		log.Println("-------------------------------")
+
+		//TODO: if "--open" flag
+		switch runtime.GOOS {
+		// TODO: windows
+		//TODO: linux
+		case "darwin":
+
+			args := fmt.Sprintf(`
+		reopen
+        tell current window
+          create tab with default profile
+          tell current session
+            write text "docker exec -it %s /.debugger/sh -c \"PATH=\\$PATH:/.debugger /.debugger/sh\""
+          end tell
+        end tell
+      end tell`, targetContainerCreate.ID)
+
+			err := exec.Command("/usr/bin/osascript", "-e", "tell application \"iTerm\"", "-e", args).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 
 		return nil
 	},

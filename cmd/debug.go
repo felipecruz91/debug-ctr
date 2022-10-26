@@ -232,6 +232,7 @@ func createCopyContainer(ctx context.Context, debugImage, targetContainer, copyC
 	}
 	log.Printf("containerCmd: %+v", containerCmd)
 
+	target := "container:" + targetContainer
 	copyContainerCreateResp, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:      inspect.Image,
 		User:       inspect.Config.User,
@@ -244,6 +245,9 @@ func createCopyContainer(ctx context.Context, debugImage, targetContainer, copyC
 		Binds: []string{
 			volume + ":" + "/.debugger",
 		},
+		NetworkMode: container.NetworkMode(target),
+		PidMode:     container.PidMode(target),
+		UTSMode:     container.UTSMode(target),
 	}, nil, nil, copyContainerName)
 	if err != nil {
 		return err

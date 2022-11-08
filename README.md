@@ -66,13 +66,13 @@ Sometimes it's useful to change the entrypoint and/or command for a container, f
 To simulate a crashing application, use docker run to create a container that immediately exits:
 
 ```shell
-docker run busybox:1.28 /bin/sh -c "false"
+docker run --name crashing-container busybox:1.28 /bin/sh -c "false"
 ```
 
 You can use `debug-ctr debug` with `--entrypoint` and/or `--cmd` to create a copy of this container with the command changed to an interactive shell:
 
 ```shell
-debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to=my-distroless-copy --entrypoint="/.debugger/sleep" --cmd="365d"
+debug-ctr debug --image=docker.io/alpine:latest --target=crashing-container --copy-to=crashing-container-copy --entrypoint="/.debugger/sleep" --cmd="365d"
 ```
 
 Now you have an interactive shell that you can use to perform tasks like checking filesystem paths or running a container command manually.

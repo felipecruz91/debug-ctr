@@ -34,6 +34,7 @@ var debugCmd = &cobra.Command{
 	Example: `
 debug-ctr debug --target=my-distroless	
 debug-ctr debug --image=busybox:1.28 --target=my-distroless
+debug-ctr debug --image=busybox:1.28 --target=my-distroless --open-term
 debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to=my-distroless-copy 
 debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to=my-distroless-copy --entrypoint="/.debugger/sleep" --cmd="365d"
 `,
@@ -43,6 +44,7 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to
 		return err
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		openTerm, _ := cmd.PersistentFlags().GetBool("open-term")
 		debugImage, _ := cmd.PersistentFlags().GetString("image")
 		targetContainer, _ := cmd.PersistentFlags().GetString("target")
 		copyContainerName, _ := cmd.PersistentFlags().GetString("copy-to")
@@ -81,12 +83,13 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to
 		log.Printf("$ %s", dockerExecCmd)
 		log.Println("-------------------------------")
 
-		switch runtime.GOOS {
-		//TODO: windows
-		//TODO: linux
-		case "darwin":
+		if openTerm {
+			switch runtime.GOOS {
+			//TODO: windows
+			//TODO: linux
+			case "darwin":
 
-			args := fmt.Sprintf(`
+				args := fmt.Sprintf(`
 		reopen
         tell current window
           create tab with default profile
@@ -96,9 +99,10 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to
         end tell
       end tell`, strings.ReplaceAll(strings.ReplaceAll(dockerExecCmd, `\`, `\\`), `"`, `\"`))
 
-			err := exec.Command("/usr/bin/osascript", "-e", "tell application \"iTerm\"", "-e", args).Run()
-			if err != nil {
-				log.Fatal(err)
+				err := exec.Command("/usr/bin/osascript", "-e", "tell application \"iTerm\"", "-e", args).Run()
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 
@@ -109,6 +113,7 @@ debug-ctr debug --image=docker.io/alpine:latest --target=my-distroless --copy-to
 func init() {
 	rootCmd.AddCommand(debugCmd)
 
+	debugCmd.PersistentFlags().Bool("open-term", false, "(optional) Open a host terminal to shell into the container automatically")
 	debugCmd.PersistentFlags().String("image", "docker.io/library/busybox:latest", "(optional) The image to use for debugging purposes")
 	debugCmd.PersistentFlags().String("target", "", "(required) The target container to debug")
 	debugCmd.PersistentFlags().String("copy-to", "", "(optional) The name of the copy container")
